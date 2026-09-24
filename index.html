@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cloud Wars — Red vs Blue Cyber Range</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12151c;
+    --panel: #1a1f2b;
+    --panel-2: #212736;
+    --border: #2c3446;
+    --text: #e6e9ef;
+    --text-dim: #8b93a7;
+    --red: #ff5d5d;
+    --red-dim: #4a2a2f;
+    --blue: #4da8ff;
+    --blue-dim: #253347;
+    --amber: #ffb020;
+    --green: #3ddc84;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100%;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 28px 20px 48px; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.01em; }
+  h1 span.red { color: var(--red); }
+  h1 span.blue { color: var(--blue); }
+  .tagline { color: var(--text-dim); font-size: 0.85rem; margin-top: 4px; }
+  .reset-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 8px 14px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem; cursor: pointer; transition: border-color .15s, color .15s;
+  }
+  .reset-btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .reset-btn:focus-visible, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .stat .n { font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; font-weight: 700; }
+  .stat .l { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+  .stat.detected .n { color: var(--green); }
+  .stat.mttd .n { color: var(--amber); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; }
+  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2,1fr); } }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+  .panel-head { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .panel-head h2 { font-size: 0.9rem; margin: 0; font-weight: 700; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+  .dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .dot.blue { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+
+  .attack-list { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .attack-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px 13px; cursor: pointer; text-align: left; color: var(--text);
+    font-family: 'Space Grotesk', sans-serif; transition: border-color .15s, transform .1s;
+  }
+  .attack-btn:hover:not(:disabled) { border-color: var(--red); }
+  .attack-btn:active:not(:disabled) { transform: scale(0.99); }
+  .attack-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .attack-btn .name { font-size: 0.85rem; font-weight: 500; }
+  .attack-btn .mitre { font-size: 0.68rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .go { font-size: 0.7rem; color: var(--red); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+
+  .victim-card { padding: 16px; }
+  .victim-card .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 0.82rem; }
+  .victim-card .row:last-child { border-bottom: none; }
+  .victim-card .row .k { color: var(--text-dim); }
+  .status-pill { font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; padding: 2px 8px; border-radius: 20px; }
+  .status-pill.ok { background: var(--blue-dim); color: var(--blue); }
+  .status-pill.hit { background: var(--red-dim); color: var(--red); }
+
+  .log-stream { flex: 1; padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; overflow-y: auto; max-height: 220px; display: flex; flex-direction: column-reverse; }
+  .log-line { padding: 3px 0; color: var(--text-dim); border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .log-line .ts { color: #566078; margin-right: 6px; }
+  .log-line.flagged { color: var(--amber); }
+  .log-empty { color: var(--text-dim); font-style: italic; padding: 20px 0; text-align: center; }
+
+  .alerts { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); }
+  .alert { background: var(--panel-2); border-left: 3px solid var(--amber); border-radius: 6px; padding: 9px 12px; animation: slidein .25s ease; }
+  @keyframes slidein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .alert .top { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: var(--amber); }
+  .alert .desc { font-size: 0.72rem; color: var(--text-dim); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+
+  footer { margin-top: 22px; color: var(--text-dim); font-size: 0.72rem; text-align: center; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .alert { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="red">Cloud</span> <span class="blue">Wars</span> — Live Demo</h1>
+      <div class="tagline">Simulated Red Team vs Blue Team cyber range · attack-to-detection walkthrough</div>
+    </div>
+    <button class="reset-btn" id="resetBtn">↺ terraform destroy (reset demo)</button>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statLaunched">0</div><div class="l">attacks launched</div></div>
+    <div class="stat detected"><div class="n" id="statDetected">0</div><div class="l">detected</div></div>
+    <div class="stat mttd"><div class="n" id="statMTTD">—</div><div class="l">avg. time to detect</div></div>
+    <div class="stat"><div class="n" id="statUptime">00:00</div><div class="l">range uptime</div></div>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: Attacker console -->
+    <div class="panel">
+      <div class="panel-head"><h2><span class="dot red"></span>Attacker Console — Kali VM</h2></div>
+      <div class="attack-list" id="attackList"></div>
+
+      <div class="panel-head" style="border-top:1px solid var(--border);"><h2><span class="dot blue"></span>Victim VM — DVWA</h2></div>
+      <div class="victim-card">
+        <div class="row"><span class="k">Status</span><span class="status-pill ok" id="victimStatus">healthy</span></div>
+        <div class="row"><span class="k">Open ports</span><span>22, 80, 3306</span></div>
+        <div class="row"><span class="k">Internal IP</span><span>10.10.0.12</span></div>
+        <div class="row"><span class="k">Last event</span><span id="victimLastEvent">none</span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: SIEM dashboard -->
+    <div class="panel">
+      <div class="panel-head"><h2><span class="dot blue"></span>SIEM Dashboard — Kibana</h2></div>
+      <div class="log-stream" id="logStream">
+        <div class="log-empty">No events yet — launch an attack from the console on the left.</div>
+      </div>
+      <div class="panel-head" style="border-top:1px solid var(--border);"><h2>Detections</h2></div>
+      <div class="alerts" id="alertList"></div>
+    </div>
+  </div>
+
+  <footer>Simulated environment for demonstration purposes — no real infrastructure or network traffic involved.</footer>
+</div>
+
+<script>
+const attacks = [
+  {
+    id: 'scan', name: 'Nmap Port Scan', mitre: 'T1046 — Network Service Discovery',
+    log: (t) => `Connection attempts from 10.10.0.5 to 10.10.0.12 ports 21-3389 (SYN scan pattern)`,
+    alertTitle: 'Port scan detected', desc: 'High rate of sequential connection attempts from single host',
+    flagged: false, detectDelay: 1400
+  },
+  {
+    id: 'brute', name: 'Hydra Brute-Force (SSH)', mitre: 'T1110 — Brute Force',
+    log: () => `sshd[victim-vm]: Failed password for admin from 10.10.0.5 port 51422 ssh2`,
+    alertTitle: 'Repeated auth failures', desc: '12 failed SSH logins in 4 seconds from 10.10.0.5',
+    flagged: true, detectDelay: 900
+  },
+  {
+    id: 'sqli', name: 'SQL Injection (DVWA)', mitre: 'T1190 — Exploit Public-Facing App',
+    log: () => `apache[victim-vm]: GET /dvwa/vulnerabilities/sqli/?id=1' OR '1'='1 HTTP/1.1`,
+    alertTitle: 'SQL injection suspected', desc: "Query pattern 'OR 1=1' matched in web server logs",
+    flagged: true, detectDelay: 700
+  },
+  {
+    id: 'privesc', name: 'Privilege Escalation', mitre: 'T1068 — Exploitation for Privilege Escalation',
+    log: () => `sudo[victim-vm]: www-data : COMMAND=/bin/bash (unusual sudo context)`,
+    alertTitle: 'Unusual privilege escalation', desc: 'Low-privilege service account invoked sudo unexpectedly',
+    flagged: true, detectDelay: 1600
+  }
+];
+
+let stats = { launched: 0, detected: 0, times: [] };
+let startTime = Date.now();
+
+const attackListEl = document.getElementById('attackList');
+const logStreamEl = document.getElementById('logStream');
+const alertListEl = document.getElementById('alertList');
+const victimStatusEl = document.getElementById('victimStatus');
+const victimLastEventEl = document.getElementById('victimLastEvent');
+
+function renderAttackButtons() {
+  attackListEl.innerHTML = '';
+  attacks.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'attack-btn';
+    btn.innerHTML = `<span><span class="name">${a.name}</span><br><span class="mitre">${a.mitre}</span></span><span class="go">RUN →</span>`;
+    btn.addEventListener('click', () => runAttack(a, btn));
+    attackListEl.appendChild(btn);
+  });
+}
+
+function pad(n) { return n.toString().padStart(2,'0'); }
+
+function addLog(text, flagged) {
+  const empty = logStreamEl.querySelector('.log-empty');
+  if (empty) empty.remove();
+  const line = document.createElement('div');
+  line.className = 'log-line' + (flagged ? ' flagged' : '');
+  const now = new Date();
+  line.innerHTML = `<span class="ts">${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}</span>${text}`;
+  logStreamEl.prepend(line);
+}
+
+function addAlert(a, ms) {
+  const el = document.createElement('div');
+  el.className = 'alert';
+  el.innerHTML = `<div class="top"><span>⚠ ${a.alertTitle}</span><span>${ms}ms</span></div><div class="desc">${a.desc} · ${a.mitre}</div>`;
+  alertListEl.prepend(el);
+}
+
+function runAttack(a, btn) {
+  btn.disabled = true;
+  stats.launched++;
+  document.getElementById('statLaunched').textContent = stats.launched;
+
+  addLog(a.log(), false);
+  victimStatusEl.textContent = 'under attack';
+  victimStatusEl.className = 'status-pill hit';
+  victimLastEventEl.textContent = a.name;
+
+  const t0 = performance.now();
+  setTimeout(() => {
+    if (a.flagged) {
+      addLog(`logstash: tag "detected" applied — pattern match on ${a.name}`, true);
+      const elapsed = Math.round(performance.now() - t0);
+      addAlert(a, elapsed);
+      stats.detected++;
+      stats.times.push(elapsed);
+      document.getElementById('statDetected').textContent = stats.detected;
+      const avg = Math.round(stats.times.reduce((x,y)=>x+y,0) / stats.times.length);
+      document.getElementById('statMTTD').textContent = avg + 'ms';
+    }
+    victimStatusEl.textContent = 'healthy';
+    victimStatusEl.className = 'status-pill ok';
+    btn.disabled = false;
+  }, a.detectDelay);
+}
+
+function tickUptime() {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(s / 60);
+  document.getElementById('statUptime').textContent = `${pad(m)}:${pad(s % 60)}`;
+}
+setInterval(tickUptime, 1000);
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  stats = { launched: 0, detected: 0, times: [] };
+  startTime = Date.now();
+  document.getElementById('statLaunched').textContent = '0';
+  document.getElementById('statDetected').textContent = '0';
+  document.getElementById('statMTTD').textContent = '—';
+  logStreamEl.innerHTML = '<div class="log-empty">No events yet — launch an attack from the console on the left.</div>';
+  alertListEl.innerHTML = '';
+  victimStatusEl.textContent = 'healthy';
+  victimStatusEl.className = 'status-pill ok';
+  victimLastEventEl.textContent = 'none';
+  renderAttackButtons();
+});
+
+renderAttackButtons();
+</script>
+</body>
+</html>
